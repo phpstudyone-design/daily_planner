@@ -6,7 +6,15 @@ const db = require('../config/db');
  * If no plan exists, auto-generate from default template.
  */
 async function getOrCreateDailyPlan(date) {
-  let plan = await db('daily_plan').where({ plan_date: date }).first();
+  // let plan = await db('daily_plan').where({ plan_date: date }).first();
+
+  let plan = await db('daily_plan')
+  .select('*', db.raw('plan_date::text as plan_date'))
+  .where({ plan_date: date })
+  .first();
+
+  console.log(`getOrCreateDailyPlan: date=${date}, found plan=${plan}, 11111`, plan);
+
 
   if (!plan) {
     plan = await generateDailyPlan(date);
