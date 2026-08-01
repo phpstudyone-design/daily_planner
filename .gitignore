@@ -1,0 +1,25 @@
+﻿# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary / scratch files
+temp_prob.md
+daily_planner_ai_read.md
+_write_src.cjs
+_write_index.cjs
