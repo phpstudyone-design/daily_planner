@@ -2,25 +2,56 @@
 const db = require('../config/db');
 
 /**
+ * Normalize a plan record: ensure plan_date is YYYY-MM-DD string and plan_items is array
+ */
+function normalizePlan(plan) {
+  if (!plan) return plan;
+
+  // Use the text-cast plan_date if available (from getAllPlans), otherwise fall back to parsing
+  let planDate = plan.plan_date_text || plan.plan_date;
+  if (planDate instanceof Date) {
+    planDate = planDate.toISOString().split('T')[0];
+  } else if (typeof planDate === 'string' && planDate.includes('T')) {
+    planDate = planDate.split('T')[0];
+  }
+
+  // Ensure plan_items is an array
+  let planItems = plan.plan_items;
+  if (typeof planItems === 'string') {
+    try {
+      planItems = JSON.parse(planItems);
+    } catch {
+      planItems = [];
+    }
+  }
+
+  // Build clean object with only the columns we want
+  const result = {
+    id: plan.id,
+    plan_date: planDate,
+    plan_items: planItems,
+    created_at: plan.created_at,
+    updated_at: plan.updated_at,
+  };
+
+  return result;
+}
+
+/**
  * Get or create daily plan for a given date.
  * If no plan exists, auto-generate from default template.
  */
 async function getOrCreateDailyPlan(date) {
-  // let plan = await db('daily_plan').where({ plan_date: date }).first();
-
   let plan = await db('daily_plan')
-  .select('*', db.raw('plan_date::text as plan_date'))
-  .where({ plan_date: date })
-  .first();
-
-  console.log(`getOrCreateDailyPlan: date=${date}, found plan=${plan}, 11111`, plan);
-
+    .select('*', db.raw('plan_date::text as plan_date_text'))
+    .where({ plan_date: date })
+    .first();
 
   if (!plan) {
     plan = await generateDailyPlan(date);
   }
 
-  return plan;
+  return normalizePlan(plan);
 }
 
 /**
@@ -81,14 +112,19 @@ async function generateDailyPlan(date) {
     plan_items: JSON.stringify(planItems),
   }).returning('*');
 
-  return newPlan;
+  return normalizePlan(newPlan);
 }
 
 /**
  * Get daily plan by date
  */
 async function getDailyPlan(date) {
-  return await db('daily_plan').where({ plan_date: date }).first();
+  const plan = await db('daily_plan')
+    .select('*', db.raw('plan_date::text as plan_date_text'))
+    .where({ plan_date: date })
+    .first();
+
+  return plan ? normalizePlan(plan) : null;
 }
 
 /**
@@ -105,7 +141,14 @@ async function updateDailyPlanItems(date, planItems) {
  * Get all historical plans (for dashboard)
  */
 async function getAllPlans() {
-  return await db('daily_plan').orderBy('plan_date', 'desc');
+  const plans = await db('daily_plan')
+    .select(
+      'daily_plan.*',
+      db.raw('plan_date::text as plan_date_text')
+    )
+    .orderByRaw('daily_plan.plan_date DESC');
+
+  return plans.map(normalizePlan);
 }
 
 module.exports = {
