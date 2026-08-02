@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getTodayPlan, updatePlanItems, getAllTasks, createTaskApi } from '../api';
 
 function IndexPage() {
@@ -11,6 +11,7 @@ function IndexPage() {
   const [dragIndex, setDragIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [loading, setLoading] = useState(true);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     async function loadPool() {
@@ -68,7 +69,6 @@ function IndexPage() {
   };
 
   const addExistingTask = async (task) => {
-    if (tasks.find(t => t.id === task.id)) { alert('该任务已在当日计划中'); return; }
     const updated = [...tasks];
     updated.push({ id: task.id, name: task.name, type: task.task_type, done: false, order: updated.length });
     setTasks(updated); setShowAddDropdown(false); await persistTasks(updated);
@@ -126,11 +126,14 @@ function IndexPage() {
       </div>
       <div className="card">
         <h3 style={{ fontSize: '0.95rem', marginBottom: '0.8rem', color: '#555' }}>+ 添加任务</h3>
-        <div style={{ position: 'relative' }}>
+        <div ref={dropdownRef} style={{ position: 'relative' }}>
           <input type="text" placeholder="搜索或输入新任务名称..." value={newTaskName}
             onChange={(e) => { setNewTaskName(e.target.value); setShowAddDropdown(true); }}
             onFocus={() => setShowAddDropdown(true)}
-            onBlur={() => setTimeout(() => setShowAddDropdown(false), 200)}
+            onBlur={(e) => {
+              if (e.relatedTarget && dropdownRef.current?.contains(e.relatedTarget)) return;
+              setTimeout(() => setShowAddDropdown(false), 200);
+            }}
             style={{ width: '100%', padding: '0.6rem 0.8rem' }} />
           {showAddDropdown && (filteredPoolTasks.length > 0 || newTaskName.trim()) && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10, maxHeight: '300px', overflowY: 'auto' }}>
@@ -162,4 +165,3 @@ function IndexPage() {
 }
 
 export default IndexPage;
-
