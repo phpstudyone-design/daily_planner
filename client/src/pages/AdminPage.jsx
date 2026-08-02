@@ -232,13 +232,11 @@ function TemplateManagement() {
   };
 
   const addTaskToTemplate = (taskId) => {
-    if (!editTaskIds.includes(taskId)) {
-      setEditTaskIds([...editTaskIds, taskId]);
-    }
+    setEditTaskIds([...editTaskIds, taskId]);
   };
 
   const removeTaskFromTemplate = (taskId) => {
-    setEditTaskIds(editTaskIds.filter(id => id !== taskId));
+    setEditTaskIds(editTaskIds.filter((id, i) => !(id === taskId && editTaskIds.indexOf(id) === i)));
   };
 
   return (
@@ -336,7 +334,7 @@ function TemplateManagement() {
                   style={{ fontSize: '0.85rem' }}
                 >
                   <option value="">+ 添加主要任务</option>
-                  {mainTasks.filter(t => !editTaskIds.includes(t.id)).map(t => (
+                  {mainTasks.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
                 </select>
