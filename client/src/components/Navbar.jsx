@@ -4,14 +4,15 @@ import { Link, useLocation } from 'react-router-dom';
 function Navbar() {
   const location = useLocation();
   const links = [
-    { path: '/', label: '\u4eca\u65e5\u4efb\u52a1' },
-    { path: '/dashboard', label: '\u6570\u636e\u770b\u677f' },
-    { path: '/admin', label: '\u7ba1\u7406\u9875\u9762' },
+    { path: '/', label: '今日任务' },
+    { path: '/counter', label: '计数器' },
+    { path: '/dashboard', label: '数据看板' },
+    { path: '/admin', label: '管理页面' },
   ];
 
   return (
     <nav className="navbar">
-      <Link to="/" className="logo">{'📋'} Daily Planner</Link>
+      <Link to="/" className="logo">{'\u{1F4CB}'} Daily Planner</Link>
       <div className="nav-links">
         {links.map((link) => (
           <Link
