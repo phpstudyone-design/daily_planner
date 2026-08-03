@@ -1,6 +1,7 @@
 ﻿# Daily Planner
 
 一个基于 **React + Express + PostgreSQL** 的全栈日常计划管理应用。用户可以从任务池中挑选任务生成每日计划，并使用模板快速创建标准化日程。
+
 <img width="869" height="843" alt="image" src="https://github.com/user-attachments/assets/f0b1b6fc-e7ba-4a93-8141-39b36a532374" />
 
 <img width="881" height="796" alt="image" src="https://github.com/user-attachments/assets/130faf9d-f4fa-490b-91a0-fe6af5a022c3" />
