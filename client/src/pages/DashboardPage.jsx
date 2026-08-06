@@ -1,4 +1,4 @@
-﻿// client/src/pages/DashboardPage.jsx - Historical task stats dashboard
+// client/src/pages/DashboardPage.jsx - Historical task stats dashboard
 import React, { useState, useEffect } from 'react';
 import { getAllPlans } from '../api';
 

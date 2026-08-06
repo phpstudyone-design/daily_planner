@@ -1,4 +1,4 @@
-﻿# Daily Planner
+# Daily Planner
 
 一个基于 **React + Express + PostgreSQL** 的全栈日常计划管理应用。用户可以从任务池中挑选任务生成每日计划，并使用模板快速创建标准化日程。
 
@@ -103,7 +103,7 @@ cp .env.example .env
 npx knex migrate:latest
 
 # 4. 启动开发环境
-# 终端 A — 后端服务 (默认端口 3000)
+# 终端 A — 后端服务 (默认端口 17321)
 npm run dev:server
 
 # 终端 B — 前端热重载 (默认端口 5173)
@@ -122,7 +122,7 @@ npm run build
 npm start
 ```
 
-访问 http://localhost:3000 即可。Express 会自动提供 `dist/` 目录下的静态资源并对所有非 `/api` 路由返回 `index.html` 以支持前端路由。
+访问 http://localhost:17321 即可。Express 会自动提供 `dist/` 目录下的静态资源并对所有非 `/api` 路由返回 `index.html` 以支持前端路由。
 
 ### 数据库迁移管理
 
@@ -139,9 +139,72 @@ npx knex migrate:rollback
 | 变量          | 说明                   | 默认值          |
 | ------------- | ---------------------- | --------------- |
 | `NODE_ENV`    | 运行环境               | `development`   |
-| `PORT`        | Express 服务端口       | `3000`          |
+| `PORT`        | Express 服务端口       | `17321`          |
 | `DB_HOST`     | PostgreSQL 主机地址    | `localhost`     |
 | `DB_PORT`     | PostgreSQL 端口        | `5432`          |
 | `DB_NAME`     | 数据库名               | `daily_planner` |
 | `DB_USER`     | 数据库用户名           | `postgres`      |
 | `DB_PASSWORD` | 数据库密码             | *(必填)*        |
+
+## 打包为 Windows 可执行文件 (EXE)
+
+本项目基于 **Tauri 2.x** 提供 Windows 桌面端打包能力，一键生成 NSIS 格式的安装程序 (`DailyPlannerSetup.exe`)。安装包内嵌 Node.js 运行时、Express 服务代码、嵌入式 PostgreSQL 数据库及前端静态资源，安装后双击图标即可使用，无需任何外部运行环境。
+
+### 前置要求
+
+- **Node.js** >= 18（已有）
+- **Rust** stable：通过 [rustup](https://www.rust-lang.org/tools/install) 安装
+- **Visual Studio Build Tools**（含 C++ 桌面开发工具链）：从 [Visual Studio Installer](https://visualstudio.microsoft.com/visual-cpp-build-tools/) 获取，选择「使用 C++ 的桌面开发」 workload
+- **WebView2 运行时**：Windows 10/11 通常预装；若未安装请前往 [Microsoft WebView2 下载页](https://developer.microsoft.com/en-us/microsoft-edge/webview2) 安装
+- （可选）**Rust 国内镜像**：编译 Rust 依赖时可设置
+
+```powershell
+$env:CARGO_HTTP_CHECK_RETRIES = "10"
+$env:RUSTUP_DIST_SERVER = "https://mirrors.ustc.edu.cn/rust-static"
+$env:RUSTUP_UPDATE_ROOT = "https://mirrors.ustc.edu.cn/rustup"
+```
+
+### 打包步骤
+
+```powershell
+# 1. 安装项目依赖（如尚未安装）
+npm install
+
+# 2. 执行 Tauri 构建（自动完成：前端 build -> Rust 编译 -> NSIS 打包）
+npm run build:tauri
+```
+
+构建成功后，安装包输出至：
+
+```
+src-tauri/target/release/bundle/nsis/DailyPlannerSetup.exe
+```
+
+### 安装与卸载
+
+生成的 `DailyPlannerSetup.exe` 为 NSIS 标准安装程序，支持：
+
+- **自定义安装路径**（默认 `%PROGRAMFILES%\Daily Planner`）
+- **自动创建桌面快捷方式与开始菜单入口**
+- **控制面板卸载**
+
+用户数据（PostgreSQL 数据库、配置等）统一存储在 `%LOCALAPPDATA%\DailyPlanner\`，覆盖安装不会丢失已有数据。
+
+### 开发模式调试
+
+```powershell
+# 启动 Tauri 桌面窗口 + Vite 热重载（前后端联动）
+npm run dev:tauri
+```
+
+### 常见问题
+
+| 问题 | 解决方案 |
+|------|----------|
+| `cargo` 命令未识别 | 确保 Rust 已正确安装：`rustc --version`；Windows 下需重启终端使 PATH 生效 |
+| 编译时报 MSVC 工具链缺失 | 安装 Visual Studio Build Tools 并勾选「C++ 桌面开发」workload |
+| `tauri.conf.json` 中 `beforeBuildCommand` 失败 | 检查前端构建是否正常：先单独运行 `npm run build` 排查错误 |
+| WebView2 运行时未找到 | 手动安装 [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2)；首次启动会自动下载 |
+| Rust 依赖下载缓慢 | 参考上方「国内镜像」配置环境变量，或使用 `cargo mirror` 工具 |
+| 打包后双击无反应/闪退 | 以管理员权限运行一次；检查 `%LOCALAPPDATA%\DailyPlanner\` 目录权限；查看 Windows 事件查看器中的错误日志 |
+

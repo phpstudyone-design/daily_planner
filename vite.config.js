@@ -1,4 +1,4 @@
-// vite.config.js - Configure Vite for React SPA build
+// vite.config.js - Configure Vite for React SPA build (Tauri Desktop)
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
@@ -13,8 +13,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Proxy /api requests to Express backend (Tauri dev mode)
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': 'http://127.0.0.1:17321',
+      '/health': 'http://127.0.0.1:17321',
     },
   },
 });

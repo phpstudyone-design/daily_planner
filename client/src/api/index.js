@@ -1,8 +1,14 @@
 ﻿// client/src/api/index.js - Axios instance and API calls
 import axios from 'axios';
 
+// In Tauri production mode the frontend loads from file:// protocol,
+// so we must use the full HTTP URL to reach our Express backend.
+// In dev mode Vite proxies /api to http://127.0.0.1:17321 automatically.
+const isTauri = typeof window !== 'undefined' && !!window.__TAURI__;
+const apiBase = isTauri ? 'http://127.0.0.1:17321/api' : '/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: apiBase,
   timeout: 10000,
 });
 

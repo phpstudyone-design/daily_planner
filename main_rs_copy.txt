@@ -1,0 +1,29 @@
+use std::path::{Path, PathBuf};
+use std::process::{Child, Command, Stdio};
+use std::os::windows::process::CommandExt;
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+
+use once_cell::sync::Lazy;
+use tauri::{Emitter, Manager, WebviewWindow};
+
+// Global state for tracking spawned processes
+struct ProcessState {
+    node_child: Mutex<Option<Child>>,
+}
+
+static STATE: Lazy<ProcessState> = Lazy::new(|| ProcessState {
+    node_child: Mutex::new(None),
+});
+
+fn tauri_log(msg: &str) {
+    println!("[Tauri] {}", msg);
+}
+
+/// Load .env file and parse key=value pairs for passing to Node process
+fn load_env_vars(env_path: &Path) -> Option<Vec<(String, String)>> {
+    std::fs::read_to_string(env_path).ok().and_then(|content| {
+        let mut vars = Vec::new();
+        for line in content.lines() {
+            let line = line.trim();
+            if line.is_empty() || line.starts_with(

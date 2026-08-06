@@ -1,4 +1,4 @@
-﻿// server/controllers/dailyPlanController.js
+// server/controllers/dailyPlanController.js
 const dailyPlanService = require('../services/dailyPlanService');
 
 // Normalize a date value to YYYY-MM-DD (local time)

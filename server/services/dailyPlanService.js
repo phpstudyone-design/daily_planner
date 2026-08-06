@@ -1,4 +1,4 @@
-﻿// server/services/dailyPlanService.js - Core business logic for daily plan generation
+// server/services/dailyPlanService.js - Core business logic for daily plan generation
 const db = require('../config/db');
 
 /**

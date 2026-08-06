@@ -1,4 +1,4 @@
-﻿// server/routes/dailyPlanRoutes.js
+// server/routes/dailyPlanRoutes.js
 const express = require('express');
 const router = express.Router();
 const dailyPlanController = require('../controllers/dailyPlanController');
