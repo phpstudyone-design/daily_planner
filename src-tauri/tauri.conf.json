@@ -1,6 +1,6 @@
 {
     "productName":  "Daily Planner",
-    "version":  "1.0.5",
+    "version":  "1.0.8",
     "identifier":  "com.dailyplanner.app",
     "build":  {
                   "beforeDevCommand":  "npm run dev:client",
@@ -57,7 +57,8 @@
                                      "../server/**/*",
                                      "../knexfile.js",
                                      "../node_modules/**/*",
-                                     "../.env"
+                                     "../.env",
+                                     "../daily_planner.db"
                                  ],
                    "copyright":  "Copyright (C) 2026 Daily Planner. All rights reserved.",
                    "shortDescription":  "Offline daily planner desktop application",

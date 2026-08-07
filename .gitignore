@@ -19,6 +19,9 @@ Thumbs.db
 npm-debug.log*
 
 tauri.md
+daily_planner.db
+test-api.js
+import-data.js
 # IDE
 .vscode/
 .idea/

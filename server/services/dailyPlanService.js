@@ -7,8 +7,8 @@ const db = require('../config/db');
 function normalizePlan(plan) {
   if (!plan) return plan;
 
-  // Use the text-cast plan_date if available (from getAllPlans), otherwise fall back to parsing
-  let planDate = plan.plan_date_text || plan.plan_date;
+  // Convert plan_date to YYYY-MM-DD format
+  let planDate = plan.plan_date;
   if (planDate instanceof Date) {
     planDate = planDate.toISOString().split('T')[0];
   } else if (typeof planDate === 'string' && planDate.includes('T')) {
@@ -43,7 +43,7 @@ function normalizePlan(plan) {
  */
 async function getOrCreateDailyPlan(date) {
   let plan = await db('daily_plan')
-    .select('*', db.raw('plan_date::text as plan_date_text'))
+    .select('*')
     .where({ plan_date: date })
     .first();
 
@@ -69,10 +69,12 @@ async function generateDailyPlan(date) {
 
   // Get main tasks from template
   const taskIds = template.task_ids;
-  const mainTasks = await db('task_pool').whereIn('id', taskIds);
+  // Parse the JSON string stored in task_ids column
+  const parsedTaskIds = JSON.parse(taskIds);
+  const mainTasks = await db('task_pool').whereIn('id', parsedTaskIds);
 
   // Order main tasks according to template order
-  const orderedMainTasks = taskIds.map(id => mainTasks.find(t => t.id === id));
+  const orderedMainTasks = parsedTaskIds.map(id => mainTasks.find(t => t.id === id));
 
   // Get all relax tasks
   const relaxTasks = await db('task_pool').where({ task_type: 'relax' });
@@ -120,7 +122,7 @@ async function generateDailyPlan(date) {
  */
 async function getDailyPlan(date) {
   const plan = await db('daily_plan')
-    .select('*', db.raw('plan_date::text as plan_date_text'))
+    .select('*')
     .where({ plan_date: date })
     .first();
 
@@ -142,10 +144,7 @@ async function updateDailyPlanItems(date, planItems) {
  */
 async function getAllPlans() {
   const plans = await db('daily_plan')
-    .select(
-      'daily_plan.*',
-      db.raw('plan_date::text as plan_date_text')
-    )
+    .select('daily_plan.*')
     .orderByRaw('daily_plan.plan_date DESC');
 
   return plans.map(normalizePlan);

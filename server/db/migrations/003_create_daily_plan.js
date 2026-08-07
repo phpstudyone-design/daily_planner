@@ -2,8 +2,8 @@
 exports.up = function (knex) {
   return knex.schema.createTable('daily_plan', (table) => {
     table.increments('id').primary();
-    table.date('plan_date').notNullable().unique().comment('Plan date');
-    table.jsonb('plan_items').notNullable().comment('Complete ordered task list with id, name, type, done, order');
+    table.date('plan_date').notNullable().unique();
+    table.text('plan_items').notNullable();
     table.timestamps(true, true);
   });
 };
