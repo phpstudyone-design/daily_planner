@@ -2,9 +2,9 @@
 exports.up = function (knex) {
   return knex.schema.createTable('plan_template', (table) => {
     table.increments('id').primary();
-    table.string('name').notNullable().comment('Template name');
-    table.jsonb('task_ids').notNullable().comment('Ordered array of main task IDs');
-    table.boolean('is_default').notNullable().defaultTo(false).comment('Default template flag');
+    table.string('name').notNullable();
+    table.text('task_ids').notNullable();
+    table.boolean('is_default').notNullable().defaultTo(false);
     table.timestamps(true, true);
   });
 };

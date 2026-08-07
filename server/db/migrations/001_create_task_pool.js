@@ -2,8 +2,8 @@
 exports.up = function (knex) {
   return knex.schema.createTable('task_pool', (table) => {
     table.increments('id').primary();
-    table.string('name').notNullable().comment('Task name');
-    table.enum('task_type', ['main', 'relax']).notNullable().defaultTo('main').comment('main=main task, relax=leisure task');
+    table.string('name').notNullable();
+    table.string('task_type').notNullable().defaultTo('main');
     table.timestamps(true, true);
   });
 };

@@ -1,16 +1,14 @@
-// knexfile.js - Knex configuration
+// knexfile.js - Knex configuration for SQLite
 require('dotenv').config();
+const path = require('path');
 
 module.exports = {
   development: {
-    client: 'pg',
+    client: 'sqlite3',
     connection: {
-      host: process.env.DB_HOST || 'localhost',
-      port: parseInt(process.env.DB_PORT) || 5432,
-      database: process.env.DB_NAME || 'daily_planner',
-      user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || '',
+      filename: path.join(__dirname, process.env.DB_PATH || 'daily_planner.db'),
     },
+    useNullAsDefault: true,
     migrations: {
       directory: './server/db/migrations',
     },
