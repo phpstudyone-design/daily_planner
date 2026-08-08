@@ -1,6 +1,6 @@
 {
   "name": "daily-planner",
-  "version": "1.0.0",
+  "version": "1.0.9",
   "description": "Daily planner app with React SPA served by Express",
   "main": "server/server.js",
   "scripts": {

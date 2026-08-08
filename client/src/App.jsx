@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import IndexPage from './pages/IndexPage';
 import CounterPage from './pages/CounterPage';
+import StopwatchPage from './pages/StopwatchPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 
@@ -15,6 +16,7 @@ function App() {
           <Routes>
             <Route path="/" element={<IndexPage />} />
             <Route path="/counter" element={<CounterPage />} />
+            <Route path="/stopwatch" element={<StopwatchPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
