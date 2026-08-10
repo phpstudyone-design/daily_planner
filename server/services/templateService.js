@@ -1,16 +1,40 @@
 // server/services/templateService.js - Template management
 const db = require('../config/db');
 
+/**
+ * Normalize a template record: parse task_ids from JSON string to array
+ */
+function normalizeTemplate(template) {
+  if (!template) return template;
+
+  let taskIds = template.task_ids;
+  if (typeof taskIds === 'string') {
+    try {
+      taskIds = JSON.parse(taskIds);
+    } catch {
+      taskIds = [];
+    }
+  }
+
+  return {
+    ...template,
+    task_ids: Array.isArray(taskIds) ? taskIds : [],
+  };
+}
+
 async function getAllTemplates() {
-  return await db('plan_template').orderBy('id', 'asc');
+  const templates = await db('plan_template').orderBy('id', 'asc');
+  return templates.map(normalizeTemplate);
 }
 
 async function getDefaultTemplate() {
-  return await db('plan_template').where({ is_default: true }).first();
+  const template = await db('plan_template').where({ is_default: true }).first();
+  return normalizeTemplate(template);
 }
 
 async function getTemplateById(id) {
-  return await db('plan_template').where({ id }).first();
+  const template = await db('plan_template').where({ id }).first();
+  return normalizeTemplate(template);
 }
 
 function serializeTaskIds(task_ids) {
@@ -23,7 +47,7 @@ async function createTemplate({ name, task_ids }) {
   const [newTemplate] = await db('plan_template')
     .insert({ name, task_ids: serializeTaskIds(task_ids), is_default: false })
     .returning('*');
-  return newTemplate;
+  return normalizeTemplate(newTemplate);
 }
 
 async function updateTemplate(id, { name, task_ids }) {
