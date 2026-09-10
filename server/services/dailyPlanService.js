@@ -150,10 +150,20 @@ async function getAllPlans() {
   return plans.map(normalizePlan);
 }
 
+/**
+ * Delete a daily plan by date
+ */
+async function deleteDailyPlan(date) {
+  return await db('daily_plan')
+    .where({ plan_date: date })
+    .del();
+}
+
 module.exports = {
   getOrCreateDailyPlan,
   generateDailyPlan,
   getDailyPlan,
   updateDailyPlanItems,
   getAllPlans,
+  deleteDailyPlan,
 };

@@ -8,5 +8,6 @@ router.get('/all', dailyPlanController.getAllPlans);
 router.get('/today', dailyPlanController.getTodayPlan);
 router.get('/:date', dailyPlanController.getPlanByDate);
 router.put('/', dailyPlanController.updatePlanItems);
+router.delete('/:date', dailyPlanController.deletePlan);
 
 module.exports = router;

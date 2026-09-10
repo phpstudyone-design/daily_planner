@@ -68,3 +68,18 @@ exports.getPlanByDate = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// Delete a plan by date
+exports.deletePlan = async (req, res) => {
+  try {
+    const normalizedDate = normalizeDate(req.params.date);
+    const deleted = await dailyPlanService.deleteDailyPlan(normalizedDate);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Plan not found' });
+    }
+    res.json({ success: true, data: { plan_date: normalizedDate } });
+  } catch (err) {
+    console.error('deletePlan error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
