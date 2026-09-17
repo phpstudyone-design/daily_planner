@@ -1,4 +1,4 @@
-﻿// client/src/api/index.js - Axios instance and API calls
+// client/src/api/index.js - Axios instance and API calls
 import axios from 'axios';
 
 // In Tauri production mode the frontend loads from file:// protocol,
@@ -17,6 +17,7 @@ export const getTodayPlan = (date) => api.get('/daily-plan/today', { params: { d
 export const getPlanByDate = (date) => api.get(`/daily-plan/${date}`);
 export const getAllPlans = () => api.get('/daily-plan/all');
 export const updatePlanItems = (date, plan_items) => api.put('/daily-plan', { date, plan_items });
+export const deletePlanByDate = (date) => api.delete(`/daily-plan/${date}`);
 
 // Task Pool APIs
 export const getAllTasks = () => api.get('/tasks');

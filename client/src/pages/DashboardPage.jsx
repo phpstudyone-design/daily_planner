@@ -1,11 +1,19 @@
 // client/src/pages/DashboardPage.jsx - Historical task stats dashboard
 import React, { useState, useEffect } from 'react';
-import { getAllPlans } from '../api';
+import { getAllPlans, deletePlanByDate } from '../api';
 
 function DashboardPage() {
   const [plans, setPlans] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // History table sort + pagination state
+  const [historySort, setHistorySort] = useState({ key: 'plan_date', dir: 'desc' });
+  const [historyPage, setHistoryPage] = useState(1);
+  const historyPageSize = 10;
+
+  // Deleting state
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadPlans();
@@ -51,7 +59,6 @@ function DashboardPage() {
     return sum + p.plan_items.filter(i => i.type === 'relax' && i.done).length;
   }, 0);
 
-  // Best / worst days (sorted by completion rate desc / asc)
   const plansWithStats = plans.map(p => {
     const items = Array.isArray(p.plan_items) ? p.plan_items : [];
     const total = items.length;
@@ -60,14 +67,39 @@ function DashboardPage() {
     return { ...p, total, done, pct };
   });
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // Split records:
+  // - historyPlans: completion rate > 0 (used by worst days & history table)
+  // - zeroPlans: completion rate = 0, excluding today (display & batch delete)
+  const historyPlans = plansWithStats.filter(p => p.pct > 0);
+  const zeroPlans = plansWithStats.filter(p => p.pct === 0 && p.plan_date !== todayStr);
+
+  // History table sort + pagination (derived from historyPlans)
+  const sortedHistory = [...historyPlans].sort((a, b) => {
+    let cmp = 0;
+    if (historySort.key === 'plan_date') {
+      cmp = a.plan_date.localeCompare(b.plan_date);
+    } else if (historySort.key === 'pct') {
+      cmp = a.pct - b.pct;
+    }
+    return historySort.dir === 'asc' ? cmp : -cmp;
+  });
+  const totalPages = Math.max(1, Math.ceil(sortedHistory.length / historyPageSize));
+  const currentPage = Math.min(historyPage, totalPages);
+  const pagedHistory = sortedHistory.slice((currentPage - 1) * historyPageSize, currentPage * historyPageSize);
+  const handleHistorySort = (key) => {
+    setHistorySort(prev => ({ key, dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc' }));
+    setHistoryPage(1);
+  };
+
   const bestDays = [...plansWithStats].sort((a, b) => b.pct - a.pct).slice(0, 3);
-  const worstDays = [...plansWithStats].sort((a, b) => a.pct - b.pct).slice(0, 3);
+  const worstDays = [...plansWithStats].filter(p => p.pct > 0).sort((a, b) => a.pct - b.pct).slice(0, 3);
 
   // Consecutive days (streak): find the longest consecutive streak ending today or recently
   const sortedDates = [...new Set(plans.map(p => p.plan_date))].sort().reverse();
   let streak = 0;
   if (sortedDates.length > 0) {
-    const todayStr = new Date().toISOString().split('T')[0];
     let expectedDate = todayStr;
     for (const d of sortedDates) {
       if (d === expectedDate) {
@@ -84,6 +116,36 @@ function DashboardPage() {
 
   // Find selected plan details
   const selectedPlan = plans.find(p => p.plan_date === selectedDate);
+
+  // --- Delete handlers ---
+  const handleDeletePlan = async (date) => {
+    if (!confirm(`确定删除 ${date} 的记录？此操作不可恢复。`)) return;
+    setDeleting(true);
+    try {
+      await deletePlanByDate(date);
+      await loadPlans();
+    } catch (err) {
+      console.error('Delete plan failed:', err);
+      alert('删除失败，请重试');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteAllZero = async () => {
+    if (zeroPlans.length === 0) return;
+    if (!confirm(`确定批量删除全部 ${zeroPlans.length} 条完成率为 0 的记录？此操作不可恢复（已排除当天记录）。`)) return;
+    setDeleting(true);
+    try {
+      await Promise.all(zeroPlans.map(p => deletePlanByDate(p.plan_date)));
+      await loadPlans();
+    } catch (err) {
+      console.error('Batch delete failed:', err);
+      alert('批量删除部分失败，请重试');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   // --- Mini bar chart data: last 7 days trend ---
   const getLast7DaysData = () => {
@@ -231,12 +293,18 @@ function DashboardPage() {
         </div>
         <div className="card">
           <h3 style={{ fontSize: '0.95rem', marginBottom: '0.8rem', color: '#f44336' }}>⚠️ 完成率最低</h3>
-          {worstDays.map((d, idx) => (
-            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #f5f5f5' }}>
-              <span style={{ fontSize: '0.9rem' }}>{d.plan_date}</span>
-              <span style={{ fontWeight: 600, color: '#f44336' }}>{d.pct}% ({d.done}/{d.total})</span>
+          {worstDays.length === 0 ? (
+            <div style={{ textAlign: 'center', color: '#aaa', padding: '1.5rem', fontSize: '0.9rem' }}>
+              暂无数据（已完成记录不足）
             </div>
-          ))}
+          ) : (
+            worstDays.map((d, idx) => (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #f5f5f5' }}>
+                <span style={{ fontSize: '0.9rem' }}>{d.plan_date}</span>
+                <span style={{ fontWeight: 600, color: '#f44336' }}>{d.pct}% ({d.done}/{d.total})</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -318,38 +386,151 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* History table */}
+      {/* History table (excludes 0% records) */}
       <div className="card">
-        <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>📋 历史记录</h3>
+        <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>
+          📋 历史记录
+          <span style={{ fontSize: '0.8rem', color: '#999', marginLeft: '0.5rem', fontWeight: 400 }}>
+            共 {sortedHistory.length} 条（不含完成率 0%）
+          </span>
+        </h3>
         <div className="table-container">
           <table>
             <thead>
               <tr>
-                <th>日期</th>
+                <th
+                  style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                  onClick={() => handleHistorySort('plan_date')}
+                  title="点击按日期排序"
+                >
+                  日期 {historySort.key === 'plan_date' ? (historySort.dir === 'asc' ? '↑' : '↓') : '↕'}
+                </th>
                 <th>总任务</th>
                 <th>已完成</th>
-                <th>完成率</th>
+                <th
+                  style={{ cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap' }}
+                  onClick={() => handleHistorySort('pct')}
+                  title="点击按完成率排序"
+                >
+                  完成率 {historySort.key === 'pct' ? (historySort.dir === 'asc' ? '↑' : '↓') : '↕'}
+                </th>
               </tr>
             </thead>
             <tbody>
-              {plansWithStats.map(plan => (
-                <tr key={plan.plan_date}>
-                  <td>{plan.plan_date}</td>
-                  <td>{plan.total}</td>
-                  <td>{plan.done}</td>
-                  <td>
-                    <span style={{
-                      color: plan.pct >= 80 ? '#4caf50' : plan.pct >= 50 ? '#ff9800' : '#f44336',
-                      fontWeight: 600,
-                    }}>
-                      {plan.pct}%
-                    </span>
+              {pagedHistory.length === 0 ? (
+                <tr>
+                  <td colSpan={4} style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>
+                    暂无记录
                   </td>
                 </tr>
-              ))}
+              ) : (
+                pagedHistory.map(plan => (
+                  <tr key={plan.plan_date}>
+                    <td>{plan.plan_date}</td>
+                    <td>{plan.total}</td>
+                    <td>{plan.done}</td>
+                    <td>
+                      <span style={{
+                        color: plan.pct >= 80 ? '#4caf50' : plan.pct >= 50 ? '#ff9800' : '#f44336',
+                        fontWeight: 600,
+                      }}>
+                        {plan.pct}%
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.85rem', color: '#888' }}>
+            第 {currentPage} / {totalPages} 页 · 每页 {historyPageSize} 条
+          </span>
+          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+            <button
+              className="btn btn-sm"
+              style={{ background: '#f0f0f0', border: '1px solid #ddd' }}
+              onClick={() => setHistoryPage(1)}
+              disabled={currentPage === 1}
+            >« 首页</button>
+            <button
+              className="btn btn-sm"
+              style={{ background: '#f0f0f0', border: '1px solid #ddd' }}
+              onClick={() => setHistoryPage(currentPage - 1)}
+              disabled={currentPage === 1}
+            >‹ 上一页</button>
+            <button
+              className="btn btn-sm"
+              style={{ background: '#f0f0f0', border: '1px solid #ddd' }}
+              onClick={() => setHistoryPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >下一页 ›</button>
+            <button
+              className="btn btn-sm"
+              style={{ background: '#f0f0f0', border: '1px solid #ddd' }}
+              onClick={() => setHistoryPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >末页 »</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Zero-completion records (excludes today) */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <h3 style={{ margin: 0, fontSize: '1rem' }}>
+            📭 完成率为 0 的记录
+            <span style={{ fontSize: '0.8rem', color: '#999', marginLeft: '0.5rem', fontWeight: 400 }}>
+              {zeroPlans.length} 条（已排除当天）
+            </span>
+          </h3>
+          <button
+            className="btn btn-danger btn-sm"
+            onClick={handleDeleteAllZero}
+            disabled={zeroPlans.length === 0 || deleting}
+          >
+            🗑 批量删除
+          </button>
+        </div>
+        {zeroPlans.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#aaa', padding: '1.5rem', fontSize: '0.9rem' }}>
+            暂无完成率为 0 的记录 🎉
+          </div>
+        ) : (
+          <div className="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>日期</th>
+                  <th>任务数</th>
+                  <th>完成率</th>
+                  <th style={{ textAlign: 'right' }}>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {zeroPlans.map(plan => (
+                  <tr key={plan.plan_date}>
+                    <td>{plan.plan_date}</td>
+                    <td>{plan.done} / {plan.total}</td>
+                    <td>
+                      <span style={{ color: '#f44336', fontWeight: 600 }}>0%</span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleDeletePlan(plan.plan_date)}
+                        disabled={deleting}
+                      >删除</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

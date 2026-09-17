@@ -44,6 +44,7 @@ function TaskPoolManagement() {
   const [editType, setEditType] = useState('main');
   const [newName, setNewName] = useState('');
   const [newType, setNewType] = useState('main');
+  const [filterType, setFilterType] = useState(''); // '' | 'main' | 'relax'
 
   useEffect(() => { loadTasks(); }, []);
 
@@ -53,6 +54,8 @@ function TaskPoolManagement() {
       if (res.data.success) setTasks(res.data.data);
     } catch (err) { console.error(err); }
   };
+
+  const visibleTasks = filterType ? tasks.filter(t => t.task_type === filterType) : tasks;
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
@@ -88,7 +91,7 @@ function TaskPoolManagement() {
   return (
     <div className="card">
       {/* Create new task */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           type="text"
           placeholder="新任务名称"
@@ -103,6 +106,19 @@ function TaskPoolManagement() {
         <button className="btn btn-primary" onClick={handleCreate}>➕ 新增</button>
       </div>
 
+      {/* Filter by task type */}
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <span style={{ fontSize: '0.9rem', color: '#555' }}>筛选：</span>
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+          <option value="">全部类型</option>
+          <option value="main">主要任务</option>
+          <option value="relax">休闲任务</option>
+        </select>
+        <span style={{ fontSize: '0.85rem', color: '#888' }}>
+          {filterType ? `${visibleTasks.length} / ${tasks.length} 条` : `共 ${tasks.length} 条`}
+        </span>
+      </div>
+
       {/* Task list */}
       <table>
         <thead>
@@ -114,7 +130,14 @@ function TaskPoolManagement() {
           </tr>
         </thead>
         <tbody>
-          {tasks.map(task => (
+          {visibleTasks.length === 0 ? (
+            <tr>
+              <td colSpan={4} style={{ textAlign: 'center', color: '#aaa', padding: '2rem' }}>
+                {filterType ? `暂无${filterType === 'main' ? '主要' : '休闲'}任务` : '暂无任务，请先新增'}
+              </td>
+            </tr>
+          ) : (
+            visibleTasks.map(task => (
             <tr key={task.id}>
               <td>{task.id}</td>
               <td>
@@ -154,7 +177,8 @@ function TaskPoolManagement() {
                 )}
               </td>
             </tr>
-          ))}
+            ))
+          )}
         </tbody>
       </table>
     </div>
