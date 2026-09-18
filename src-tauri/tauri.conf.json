@@ -1,6 +1,6 @@
 {
     "productName":  "Daily Planner",
-    "version":  "1.0.11",
+    "version":  "1.0.12",
     "identifier":  "com.dailyplanner.app",
     "build":  {
                   "beforeDevCommand":  "npm run dev:client",

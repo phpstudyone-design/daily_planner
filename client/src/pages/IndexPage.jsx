@@ -94,6 +94,31 @@ function IndexPage() {
   const totalCount = tasks.length;
   const percent = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
 
+  // Split into incomplete / completed groups, preserving original order and global index.
+  const indexed = tasks.map((task, index) => ({ task, index }));
+  const incompleteItems = indexed.filter(x => !x.task.done);
+  const completedItems = indexed.filter(x => x.task.done);
+  // Only split into two columns when BOTH groups exist.
+  // - nothing completed  -> keep the original single-column layout
+  // - everything completed -> keep the existing all-completed single-column layout
+  const twoColumn = incompleteItems.length > 0 && completedItems.length > 0;
+
+  const renderTaskRow = (task, index) => (
+    <div key={`${task.id}-${index}`} draggable onDragStart={() => handleDragStart(index)}
+      onDragOver={(e) => handleDragOver(e, index)} onDrop={handleDrop} onDragEnd={handleDragEnd}
+      className={dragOverIndex === index ? 'drag-over' : ''}
+      style={{ display: 'flex', alignItems: 'center', padding: '0.8rem 1.2rem', borderBottom: '1px solid #f0f0f0', cursor: 'grab', opacity: dragIndex === index ? 0.5 : 1 }}>
+      <span style={{ marginRight: '0.8rem', color: '#ccc', fontSize: '1.2rem' }}>&#9776;</span>
+      <div onClick={() => toggleTask(index)} style={{ width: '24px', height: '24px', borderRadius: '50%', border: task.done ? '2px solid #667eea' : '2px solid #ccc', background: task.done ? '#667eea' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+        {task.done && <span style={{ color: '#fff', fontSize: '14px' }}>&#10003;</span>}
+      </div>
+      <div style={{ marginLeft: '0.8rem', flex: 1 }}>
+        <span style={{ textDecoration: task.done ? 'line-through' : 'none', color: task.done ? '#aaa' : '#333', fontSize: '0.95rem' }}>{task.name}</span>
+        <span className={`tag tag-${task.type}`} style={{ marginLeft: '0.6rem' }}>{task.type === 'main' ? '主任务' : '休闲'}</span>
+      </div>
+    </div>
+  );
+
   if (loading) return <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>加载中...</div>;
 
   return (
@@ -106,24 +131,27 @@ function IndexPage() {
         </div>
         <span style={{ fontSize: '0.9rem', color: '#667eea', fontWeight: 600 }}>{percent}%</span>
       </div>
-      <div className="card" style={{ padding: '0' }}>
-        {tasks.map((task, index) => (
-          <div key={`${task.id}-${index}`} draggable onDragStart={() => handleDragStart(index)}
-            onDragOver={(e) => handleDragOver(e, index)} onDrop={handleDrop} onDragEnd={handleDragEnd}
-            className={dragOverIndex === index ? 'drag-over' : ''}
-            style={{ display: 'flex', alignItems: 'center', padding: '0.8rem 1.2rem', borderBottom: '1px solid #f0f0f0', cursor: 'grab', opacity: dragIndex === index ? 0.5 : 1 }}>
-            <span style={{ marginRight: '0.8rem', color: '#ccc', fontSize: '1.2rem' }}>&#9776;</span>
-            <div onClick={() => toggleTask(index)} style={{ width: '24px', height: '24px', borderRadius: '50%', border: task.done ? '2px solid #667eea' : '2px solid #ccc', background: task.done ? '#667eea' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
-              {task.done && <span style={{ color: '#fff', fontSize: '14px' }}>&#10003;</span>}
+      {twoColumn ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div className="card" style={{ padding: '0', marginBottom: 0 }}>
+            <div style={{ padding: '0.8rem 1.2rem', borderBottom: '1px solid #f0f0f0', fontWeight: 600, fontSize: '0.9rem', color: '#555' }}>
+              待完成 ({incompleteItems.length})
             </div>
-            <div style={{ marginLeft: '0.8rem', flex: 1 }}>
-              <span style={{ textDecoration: task.done ? 'line-through' : 'none', color: task.done ? '#aaa' : '#333', fontSize: '0.95rem' }}>{task.name}</span>
-              <span className={`tag tag-${task.type}`} style={{ marginLeft: '0.6rem' }}>{task.type === 'main' ? '主任务' : '休闲'}</span>
-            </div>
+            {incompleteItems.map(({ task, index }) => renderTaskRow(task, index))}
           </div>
-        ))}
-        {tasks.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', color: '#aaa' }}>暂无任务</div>}
-      </div>
+          <div className="card" style={{ padding: '0', marginBottom: 0 }}>
+            <div style={{ padding: '0.8rem 1.2rem', borderBottom: '1px solid #f0f0f0', fontWeight: 600, fontSize: '0.9rem', color: '#4caf50' }}>
+              &#10003; 已完成 ({completedItems.length})
+            </div>
+            {completedItems.map(({ task, index }) => renderTaskRow(task, index))}
+          </div>
+        </div>
+      ) : (
+        <div className="card" style={{ padding: '0' }}>
+          {tasks.map((task, index) => renderTaskRow(task, index))}
+          {tasks.length === 0 && <div style={{ padding: '2rem', textAlign: 'center', color: '#aaa' }}>暂无任务</div>}
+        </div>
+      )}
       <div className="card">
         <h3 style={{ fontSize: '0.95rem', marginBottom: '0.8rem', color: '#555' }}>+ 添加任务</h3>
         <div ref={dropdownRef} style={{ position: 'relative' }}>
